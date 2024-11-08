@@ -1,11 +1,13 @@
-import React from 'react';
+import { QueryClient, QueryClientProvider } from 'react-query';
 import ChatRoom from './components/ChatRoom/ChatRoom';
 
 const App = () => {
+  const queryClient = new QueryClient();
+
   return (
-    <div>
+    <QueryClientProvider client={queryClient}>
       <ChatRoom />
-    </div>
+    </QueryClientProvider>
   );
 };
 
