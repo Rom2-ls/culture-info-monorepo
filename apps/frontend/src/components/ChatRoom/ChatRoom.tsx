@@ -1,23 +1,22 @@
 import { useState } from "react";
 import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 import { Container } from "@mui/material";
+import { useMutation } from "react-query";
+import { LoadingButton } from "@mui/lab";
+import SendIcon from '@mui/icons-material/Send';
 
 const sendMessageToServer = async (message: string) => {
-  try {
-    const response = await fetch("http://localhost:4000/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ chatInput: message }),
-    });
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error sending message:", error);
-    throw error;
+  const response = await fetch("http://localhost:4000/chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ chatInput: message }),
+  });
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
   }
+  return response.json();
 };
 
 const ChatRoom = () => {
@@ -25,24 +24,27 @@ const ChatRoom = () => {
     []
   );
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const { mutate, isLoading } = useMutation(sendMessageToServer, {
+    onSuccess: (data) => {
+      console.log("Server response:", data.content[0].text);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { text: data.content[0].text, sender: "ai" },
+      ]);
+    },
+    onError: (error) => {
+      console.error("Error sending message:", error);
+    },
+  });
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const messageInput = (event.target as HTMLFormElement).elements.namedItem(
       "message"
     ) as HTMLInputElement;
     const newMessage = messageInput.value;
     setMessages([...messages, { text: newMessage, sender: "user" }]);
-    try {
-      const response = await sendMessageToServer(newMessage);
-      console.log("Server response:", response.content[0].text);
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        { text: response.content[0].text, sender: "ai" },
-      ]);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-    messageInput.value = "";
+    mutate(newMessage);
   };
 
   // console.log(messages);
@@ -100,10 +102,17 @@ const ChatRoom = () => {
             name="message"
             label="Message pour l'IA"
             variant="outlined"
+            disabled={isLoading}
           />
-          <Button type="submit" variant="contained" color="primary">
-            Send
-          </Button>
+          <LoadingButton
+            loading={isLoading}
+            loadingPosition="end"
+            endIcon={<SendIcon />}
+            variant="outlined"
+            type="submit"
+          >
+            Envoyer
+          </LoadingButton>
         </form>
       </Container>
     </>

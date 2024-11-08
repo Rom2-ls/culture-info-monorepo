@@ -15,4 +15,13 @@ export class ChatController {
 
     return this.chatService.askAI(chatInput);
   }
+
+  @Post('test')
+  async test(@Body('chatInput') chatInput: string): Promise<string> {
+    if (chatInput === undefined || chatInput === '') {
+      throw new Error('chatInput is required');
+    }
+
+    return chatInput;
+  }
 }
